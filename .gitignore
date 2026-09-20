@@ -1,0 +1,62 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Virtual Environment
+.venv/
+venv/
+env/
+ENV/
+
+# Testing & Coverage
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+nosetests.xml
+coverage.xml
+*.cover
+
+# Next.js & Node.js
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/build/
+frontend/.pnp
+frontend/.pnp.js
+frontend/coverage/
+
+# Environment Variables & Local Config
+.env
+*.env
+!.env.example
+frontend/.env*.local
+frontend/.env
+!frontend/.env.example
+
+# Local Parquet Cache (keep sample or folder tracked via .gitkeep)
+.cache/market_data/*.parquet
+!.cache/market_data/.gitkeep
+
+# Operating System & IDE Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+.vscode/
+.idea/
+*.sublime-workspace
+*.swp
+*.swo
+
+# Temporary and Log files
+.system_generated/
+*.log
