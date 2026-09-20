@@ -94,31 +94,86 @@ export default function Home() {
     };
   }, []);
 
-  // 2. Instantaneous Market Switch Handler
-  const handleMarketChange = useCallback(async (newMarket: MarketType) => {
-    setMarket(newMarket);
+  // 2. Core simulation runner for custom or current params
+  const runSimulationForParams = useCallback(
+    async (
+      targetMarket: MarketType,
+      targetSymbols: string[],
+      targetWeights: Record<string, number>,
+      targetCapital: number
+    ) => {
+      if (targetSymbols.length === 0) return;
 
-    // Optimistic instant state update
-    if (newMarket === 'psx') {
-      const psxDefaults = ['OGDC', 'PPL', 'MCB'];
-      setSelectedSymbols(psxDefaults);
-      setWeights({ OGDC: 0.4, PPL: 0.3, MCB: 0.3 });
-      setInitialCapital(1_000_000);
-    } else {
-      const usDefaults = ['AAPL', 'MSFT', 'NVDA'];
-      setSelectedSymbols(usDefaults);
-      setWeights({ AAPL: 0.4, MSFT: 0.3, NVDA: 0.3 });
-      setInitialCapital(100_000);
-    }
-    setSimulationResult(null);
-    setComparisonResult(null);
+      setIsSimulating(true);
+      try {
+        const totalWeight = targetSymbols.reduce((sum, s) => sum + (targetWeights[s] || 0), 0);
+        const alignedWeights = targetSymbols.map((s) =>
+          totalWeight > 0 ? (targetWeights[s] || 0) / totalWeight : 1 / targetSymbols.length
+        );
 
-    // Fetch from in-memory cache (0 ms)
-    const assets = await getAssetsByMarket(newMarket);
-    setAvailableAssets(assets);
-  }, []);
+        const [simRes, analyticsRes, marketDataRes] = await Promise.all([
+          simulatePortfolio({
+            portfolio_name: targetMarket === 'psx' ? 'PSX Blue-Chip Portfolio' : 'US Growth Portfolio',
+            market: targetMarket,
+            assets: targetSymbols,
+            weights: alignedWeights,
+            initial_capital: targetCapital,
+            simulations,
+            horizon_days: horizonDays,
+            confidence_level: confidenceLevel,
+            random_seed: randomSeed,
+          }),
+          getAssetAnalytics(targetMarket, targetSymbols).catch(() => null),
+          getHistoricalMarketData(targetMarket, targetSymbols).catch(() => null),
+        ]);
 
-  // 3. Asset Selection Toggle
+        setSimulationResult(simRes);
+        if (analyticsRes) setAnalyticsResult(analyticsRes);
+        if (marketDataRes) setMarketDataResult(marketDataRes);
+      } catch (err: unknown) {
+        console.error('Simulation execution failed:', err);
+      } finally {
+        setIsSimulating(false);
+      }
+    },
+    [simulations, horizonDays, confidenceLevel, randomSeed]
+  );
+
+  // 3. Instantaneous Market Switch Handler with Auto-Simulation
+  const handleMarketChange = useCallback(
+    async (newMarket: MarketType) => {
+      setMarket(newMarket);
+
+      let newSymbols: string[];
+      let newWeights: Record<string, number>;
+      let newCapital: number;
+
+      if (newMarket === 'psx') {
+        newSymbols = ['OGDC', 'PPL', 'MCB'];
+        newWeights = { OGDC: 0.4, PPL: 0.3, MCB: 0.3 };
+        newCapital = 1_000_000;
+      } else {
+        newSymbols = ['AAPL', 'MSFT', 'NVDA'];
+        newWeights = { AAPL: 0.4, MSFT: 0.3, NVDA: 0.3 };
+        newCapital = 100_000;
+      }
+
+      setSelectedSymbols(newSymbols);
+      setWeights(newWeights);
+      setInitialCapital(newCapital);
+      setComparisonResult(null);
+
+      // Fetch assets universe (instantaneous from cache)
+      const assets = await getAssetsByMarket(newMarket);
+      setAvailableAssets(assets);
+
+      // Automatically execute simulation for new market so data appears instantly
+      runSimulationForParams(newMarket, newSymbols, newWeights, newCapital);
+    },
+    [runSimulationForParams]
+  );
+
+  // 4. Asset Selection Toggle
   const handleToggleSymbol = useCallback((symbol: string) => {
     setSelectedSymbols((prev) => {
       let updated: string[];
@@ -142,7 +197,7 @@ export default function Home() {
     });
   }, []);
 
-  // 4. Weight Adjustment
+  // 5. Weight Adjustment
   const handleWeightChange = useCallback((symbol: string, val: number) => {
     setWeights((prev) => ({
       ...prev,
@@ -150,7 +205,7 @@ export default function Home() {
     }));
   }, []);
 
-  // 5. Equalize Weights (1/N)
+  // 6. Equalize Weights (1/N)
   const handleEqualizeWeights = useCallback(() => {
     const n = selectedSymbols.length;
     if (n === 0) return;
@@ -162,7 +217,7 @@ export default function Home() {
     setWeights(newWeights);
   }, [selectedSymbols]);
 
-  // 6. Normalize Weights (scales to 100%)
+  // 7. Normalize Weights (scales to 100%)
   const handleNormalizeWeights = useCallback(() => {
     const total = selectedSymbols.reduce((sum, s) => sum + (weights[s] || 0), 0);
     if (total <= 0) {
@@ -176,52 +231,11 @@ export default function Home() {
     setWeights(newWeights);
   }, [selectedSymbols, weights, handleEqualizeWeights]);
 
-  // 7. Run Monte Carlo Simulation
+  // 8. Run Monte Carlo Simulation
   const handleExecuteSimulation = useCallback(async () => {
-    if (selectedSymbols.length === 0) return;
-
-    setIsSimulating(true);
-    try {
-      // Normalize weights array aligned with selectedSymbols
-      const totalWeight = selectedSymbols.reduce((sum, s) => sum + (weights[s] || 0), 0);
-      const alignedWeights = selectedSymbols.map((s) =>
-        totalWeight > 0 ? (weights[s] || 0) / totalWeight : 1 / selectedSymbols.length
-      );
-
-      // Execute simulation and analytics in parallel
-      const [simRes, analyticsRes, marketDataRes] = await Promise.all([
-        simulatePortfolio({
-          portfolio_name: market === 'psx' ? 'PSX Blue-Chip Portfolio' : 'US Growth Portfolio',
-          market,
-          assets: selectedSymbols,
-          weights: alignedWeights,
-          initial_capital: initialCapital,
-          simulations,
-          horizon_days: horizonDays,
-          confidence_level: confidenceLevel,
-          random_seed: randomSeed,
-        }),
-        getAssetAnalytics(market, selectedSymbols).catch((err) => {
-          console.warn('Analytics endpoint fallback:', err);
-          return null;
-        }),
-        getHistoricalMarketData(market, selectedSymbols).catch((err) => {
-          console.warn('Historical data fallback:', err);
-          return null;
-        }),
-      ]);
-
-      setSimulationResult(simRes);
-      if (analyticsRes) setAnalyticsResult(analyticsRes);
-      if (marketDataRes) setMarketDataResult(marketDataRes);
-    } catch (err: unknown) {
-      console.error('Simulation execution failed:', err);
-      alert(`Simulation Error: ${err instanceof Error ? err.message : 'Failed to connect to backend'}`);
-    } finally {
-      setIsSimulating(false);
-      setMobileSidebarOpen(false);
-    }
-  }, [selectedSymbols, weights, market, initialCapital, simulations, horizonDays, confidenceLevel, randomSeed]);
+    await runSimulationForParams(market, selectedSymbols, weights, initialCapital);
+    setMobileSidebarOpen(false);
+  }, [runSimulationForParams, market, selectedSymbols, weights, initialCapital]);
 
   // 8. Run Scenario Comparison
   const handleRunComparison = useCallback(async () => {

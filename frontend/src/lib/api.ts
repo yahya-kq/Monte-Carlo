@@ -24,19 +24,41 @@ import {
 const rawApiBase = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
 const API_BASE = rawApiBase.replace('//localhost:', '//127.0.0.1:');
 
+// Check if running in browser under HTTPS while API_BASE is insecure localhost
+function isLocalhostBlocked(): boolean {
+  if (typeof window === 'undefined') return false;
+  const isHttps = window.location.protocol === 'https:';
+  const isLocalApi = API_BASE.startsWith('http://127.0.0.1') || API_BASE.startsWith('http://localhost');
+  return isHttps && isLocalApi;
+}
+
+// Track backend reachability in-memory so UI never hangs
+let isBackendAvailable: boolean | null = null;
+
 // In-memory cache for fast, zero-latency metadata access
 const assetsCache = new Map<MarketType, AssetItem[]>();
 let marketsCache: MarketInfo[] | null = null;
 
 async function request<T>(endpoint: string, options?: RequestInit): Promise<T> {
+  // If backend is already detected offline or blocked by browser mixed-content, fail fast immediately
+  if (isBackendAvailable === false || isLocalhostBlocked()) {
+    isBackendAvailable = false;
+    throw new Error('Backend unreachable; using instant client fallback');
+  }
+
   const url = `${API_BASE}${endpoint}`;
   try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 1200);
+
     const res = await fetch(url, {
       headers: {
         'Content-Type': 'application/json',
       },
+      signal: controller.signal,
       ...options,
     });
+    clearTimeout(timeoutId);
 
     if (!res.ok) {
       let errorMessage = `HTTP ${res.status}: ${res.statusText}`;
@@ -51,18 +73,26 @@ async function request<T>(endpoint: string, options?: RequestInit): Promise<T> {
       throw new Error(errorMessage);
     }
 
+    isBackendAvailable = true;
     return await res.json();
   } catch (err: unknown) {
-    console.error(`API request failed [${endpoint}]:`, err);
+    isBackendAvailable = false;
+    console.warn(`API request failed [${endpoint}], activating instant local fallback:`, err);
     throw err;
   }
 }
 
 export async function checkBackendHealth(): Promise<{ status: string; uptime: boolean }> {
+  if (isLocalhostBlocked() || isBackendAvailable === false) {
+    isBackendAvailable = false;
+    return { status: 'offline', uptime: false };
+  }
   try {
     const data = await request<{ status: string }>('/health');
+    isBackendAvailable = data.status === 'ok';
     return { status: data.status, uptime: data.status === 'ok' };
   } catch {
+    isBackendAvailable = false;
     return { status: 'offline', uptime: false };
   }
 }
