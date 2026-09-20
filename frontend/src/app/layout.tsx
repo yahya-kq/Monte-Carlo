@@ -16,6 +16,14 @@ export const metadata: Metadata = {
   title: "MONTE CARLO | Quantitative Multi-Portfolio Risk Simulator",
   description:
     "Production-grade, mathematically rigorous multi-portfolio risk simulator featuring Monte Carlo probability modeling, Value at Risk (VaR), and Conditional VaR (CVaR) for US & PSX equities.",
+  icons: {
+    icon: [
+      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/favicon.ico", sizes: "any" },
+    ],
+    shortcut: "/favicon.ico",
+    apple: "/apple-icon.png",
+  },
 };
 
 export default function RootLayout({

@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Sparkles, Activity, Menu, Compass } from 'lucide-react';
+import { Coins, Activity, Menu, Compass } from 'lucide-react';
 import { MarketType } from '@/lib/types';
 
 interface HeaderProps {
@@ -37,7 +37,7 @@ export const Header: React.FC<HeaderProps> = ({
             className="flex items-center gap-2.5 cursor-pointer group"
           >
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-md shadow-amber-500/20 group-hover:scale-105 transition-transform">
-              <Sparkles className="w-5 h-5 text-white" />
+              <Coins className="w-5 h-5 text-white" />
             </div>
             <div>
               <div className="text-base font-extrabold tracking-wider text-slate-900 leading-tight">
