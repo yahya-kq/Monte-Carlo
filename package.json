@@ -5,7 +5,7 @@
   "description": "Enterprise Monte Carlo portfolio simulation and stress testing platform",
   "scripts": {
     "dev": "npm --prefix frontend run dev",
-    "build": "npm --prefix frontend run build && node -e \"const fs=require('fs'); if(fs.existsSync('frontend/.next')) fs.cpSync('frontend/.next', '.next', {recursive:true,force:true}); if(fs.existsSync('frontend/public')) fs.cpSync('frontend/public', 'public', {recursive:true,force:true});\"",
+    "build": "npm --prefix frontend run build",
     "start": "npm --prefix frontend run start",
     "lint": "npm --prefix frontend run lint"
   },
