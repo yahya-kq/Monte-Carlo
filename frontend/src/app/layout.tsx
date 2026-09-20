@@ -13,9 +13,38 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "MONTE CARLO | Quantitative Multi-Portfolio Risk Simulator",
+  title: "MONTE CARLO | Risk Simulator",
   description:
     "Production-grade, mathematically rigorous multi-portfolio risk simulator featuring Monte Carlo probability modeling, Value at Risk (VaR), and Conditional VaR (CVaR) for US & PSX equities.",
+  keywords: [
+    "Monte Carlo Simulation",
+    "Risk Simulator",
+    "Value at Risk",
+    "VaR",
+    "CVaR",
+    "Expected Shortfall",
+    "PSX Pakistan Stock Exchange",
+    "US Equities",
+    "Quantitative Finance",
+    "Portfolio Risk Modeling",
+  ],
+  openGraph: {
+    title: "MONTE CARLO | Risk Simulator",
+    description:
+      "Production-grade, mathematically rigorous multi-portfolio risk simulator featuring Monte Carlo probability modeling, Value at Risk (VaR), and Conditional VaR (CVaR) for US & PSX equities.",
+    type: "website",
+    siteName: "MONTE CARLO Risk Simulator",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "MONTE CARLO | Risk Simulator",
+    description:
+      "Production-grade, mathematically rigorous multi-portfolio risk simulator featuring Monte Carlo probability modeling, VaR, and CVaR for US & PSX equities.",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
   icons: {
     icon: [
       { url: "/icon.svg", type: "image/svg+xml" },
